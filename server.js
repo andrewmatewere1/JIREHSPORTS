@@ -4,6 +4,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
 const { startAllCronJobs } = require("./services/cronService");
 
 const app = express();
@@ -22,6 +24,13 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from frontend build (production)
+let distPath = path.join(__dirname, "./public");
+if (!fs.existsSync(distPath)) {
+  distPath = path.join(__dirname, "../../jireh-app/dist");
+}
+app.use(express.static(distPath));
 
 // Request logger (dev only)
 if (process.env.NODE_ENV !== "production") {
@@ -52,10 +61,21 @@ app.get("/api/health", (req, res) => {
 });
 
 // ============================================================
-// 404 HANDLER
+// CATCH-ALL FOR SPA ROUTING
+// Serve index.html for any route that's not an API route
 // ============================================================
-app.use((req, res) => {
-  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+app.get("*", (req, res) => {
+  // Only serve index.html for non-API routes
+  if (!req.path.startsWith("/api")) {
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).json({ error: "Frontend not found. Copy frontend/dist to backend/public folder." });
+    }
+  } else {
+    res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+  }
 });
 
 // ============================================================
