@@ -18,6 +18,9 @@ function signToken(payload) {
 // ============================================================
 router.post("/admin/login", async (req, res) => {
   const { username, password } = req.body;
+
+  console.log("LOGIN BODY:", req.body);// thiw...
+
   if (!username || !password) return res.status(400).json({ error: "Username and password required." });
 
   try {
@@ -32,8 +35,12 @@ router.post("/admin/login", async (req, res) => {
     res.json({ token, role: "admin", username: admin.username });
 
   } catch (err) {
-    res.status(500).json({ error: "Server error." });
-  }
+  console.error("🔥 LOGIN ERROR:", err); // 👈 ADD THIS LINE
+
+  res.status(500).json({
+    error: err.message || "Server error."
+  });
+}
 });
 
 // ============================================================
